@@ -9,7 +9,8 @@ using namespace std;
 
 void defineType(ofstream& ofs, const string& baseName, const string& className, const string& fieldList) {
 	ofs << endl;
-	ofs << "class " + className + " : public Expr {" << endl;
+	ofs << "class " + className + " : public Expr, public std::enable_shared_from_this<" + 
+		className + "> {" << endl;
 	ofs << "public:" << endl;
 
 	vector<string> fields;
@@ -42,17 +43,17 @@ void defineType(ofstream& ofs, const string& baseName, const string& className, 
 		ofs << "\t\tthis->" + name + " = " + name + ";" << endl;
 	}
 
-	ofs << "\t}" << endl;
+	ofs << "\t}" << endl << endl;
+
+	ofs << "\tany accept() override {" << endl;
+	ofs << "\t\treturn Visitor::visit" + className + baseName + "( shared_from_this() );" << endl;
+	ofs << "\t}" << endl << endl;
 
 	// Fields
 	for (auto& p : parameters) {
 		auto& [type, name] = p;
 		ofs << "\tstd::shared_ptr<" + type + "> " + name + ";" << endl;
 	}
-	
-	ofs << endl << "\tExpression getType() {" << endl;
-	ofs << "\t\treturn Expression::" + className + ";" << endl;
-	ofs << "\t}" << endl;
 
 	ofs << "};" << endl;
 }
@@ -70,11 +71,17 @@ void defineVisitor(ofstream& ofs, const string& baseName, const vector<string>& 
 		dataTypes.push_back(className);
 	}
 
-	ofs << endl << "template <typename T>" << endl;
-	ofs << "class Visitor {" << endl;
+	// Forward class declarations
+	ofs << endl;
+	for (auto& t : dataTypes) {
+		ofs << "class " + t + ";" << endl;
+	}
+
+	ofs << endl << "class Visitor {" << endl;
+	ofs << "public:" << endl;
 
 	for (auto& t : dataTypes) {
-		ofs << "\tT visit" + t + baseName + "(" + t + " " + boost::to_lower_copy<string>(baseName) + ");" << endl;
+		ofs << "\tstatic any visit" + t + baseName + "(std::shared_ptr<" + t + "> " + boost::to_lower_copy<string>(baseName) + ");" << endl;
 	}
 
 	ofs << "};" << endl;
@@ -111,11 +118,13 @@ void defineAst(const string& output_dir, const string& baseName, const vector<st
 
 	ofs << "};" << endl << endl;
 
+	defineVisitor(ofs, baseName, types);
+	ofs << endl;
+	// ofs << "class Visitor;" << endl << endl;
 	ofs << "class Expr {" << endl;
 	ofs << "public:" << endl;
 
-	ofs << "\ttemplate <typename T>" << endl;
-	ofs << "\tT accept(shared_ptr<Visitor<T>> visitor);" << endl;
+	ofs << "\tvirtual any accept() = 0;" << endl;
 	
 	ofs << "};" << endl;
 
@@ -130,7 +139,7 @@ void defineAst(const string& output_dir, const string& baseName, const vector<st
 		defineType(ofs, baseName, className, fields);
 	}
 
-	defineVisitor(ofs, baseName, types);
+	// defineVisitor(ofs, baseName, types);
 
 	ofs << endl << "#endif" << endl;
 	ofs.close();
