@@ -18,80 +18,88 @@ enum class Expression {
 };
 
 
-class Binary;
-class Grouping;
-class Literal;
-class Unary;
+template<class T> class Binary;
+template<class T> class Grouping;
+template<class T> class Literal;
+template<class T> class Unary;
 
+template<class T>
 class Visitor {
 public:
-	static any visitBinaryExpr(std::shared_ptr<Binary> expr);
-	static any visitGroupingExpr(std::shared_ptr<Grouping> expr);
-	static any visitLiteralExpr(std::shared_ptr<Literal> expr);
-	static any visitUnaryExpr(std::shared_ptr<Unary> expr);
+	virtual ~Visitor() = default;
+	T visitBinaryExpr(std::shared_ptr<Binary<T>> expr);
+	T visitGroupingExpr(std::shared_ptr<Grouping<T>> expr);
+	T visitLiteralExpr(std::shared_ptr<Literal<T>> expr);
+	T visitUnaryExpr(std::shared_ptr<Unary<T>> expr);
 };
 
+template<class T>
 class Expr {
 public:
-	virtual any accept() = 0;
+	virtual ~Expr() = default;
+	virtual T accept(std::shared_ptr<Visitor<T>> visitor) = 0;
 };
 
-class Binary : public Expr, public std::enable_shared_from_this<Binary> {
+template<class T>
+class Binary : public Expr<T>, public std::enable_shared_from_this<Binary<T>> {
 public:
-	Binary(std::shared_ptr<Expr> left, std::shared_ptr<Token> op, std::shared_ptr<Expr> right) {
+	Binary(std::shared_ptr<Expr<T>> left, std::shared_ptr<Token> op, std::shared_ptr<Expr<T>> right) {
 		this->left = left;
 		this->op = op;
 		this->right = right;
 	}
 
-	any accept() override {
-		return Visitor::visitBinaryExpr( shared_from_this() );
+	T accept(std::shared_ptr<Visitor<T>> visitor) override {
+		return visitor->visitBinaryExpr( this->shared_from_this() );
 	}
 
-	std::shared_ptr<Expr> left;
+	std::shared_ptr<Expr<T>> left;
 	std::shared_ptr<Token> op;
-	std::shared_ptr<Expr> right;
+	std::shared_ptr<Expr<T>> right;
 };
 
-class Grouping : public Expr, public std::enable_shared_from_this<Grouping> {
+template<class T>
+class Grouping : public Expr<T>, public std::enable_shared_from_this<Grouping<T>> {
 public:
-	Grouping(std::shared_ptr<Expr> expression) {
+	Grouping(std::shared_ptr<Expr<T>> expression) {
 		this->expression = expression;
 	}
 
-	any accept() override {
-		return Visitor::visitGroupingExpr( shared_from_this() );
+	T accept(std::shared_ptr<Visitor<T>> visitor) override {
+		return visitor->visitGroupingExpr( this->shared_from_this() );
 	}
 
-	std::shared_ptr<Expr> expression;
+	std::shared_ptr<Expr<T>> expression;
 };
 
-class Literal : public Expr, public std::enable_shared_from_this<Literal> {
+template<class T>
+class Literal : public Expr<T>, public std::enable_shared_from_this<Literal<T>> {
 public:
 	Literal(std::shared_ptr<any> value) {
 		this->value = value;
 	}
 
-	any accept() override {
-		return Visitor::visitLiteralExpr( shared_from_this() );
+	T accept(std::shared_ptr<Visitor<T>> visitor) override {
+		return visitor->visitLiteralExpr( this->shared_from_this() );
 	}
 
 	std::shared_ptr<any> value;
 };
 
-class Unary : public Expr, public std::enable_shared_from_this<Unary> {
+template<class T>
+class Unary : public Expr<T>, public std::enable_shared_from_this<Unary<T>> {
 public:
-	Unary(std::shared_ptr<Token> op, std::shared_ptr<Expr> right) {
+	Unary(std::shared_ptr<Token> op, std::shared_ptr<Expr<T>> right) {
 		this->op = op;
 		this->right = right;
 	}
 
-	any accept() override {
-		return Visitor::visitUnaryExpr( shared_from_this() );
+	T accept(std::shared_ptr<Visitor<T>> visitor) override {
+		return visitor->visitUnaryExpr( this->shared_from_this() );
 	}
 
 	std::shared_ptr<Token> op;
-	std::shared_ptr<Expr> right;
+	std::shared_ptr<Expr<T>> right;
 };
 
 #endif

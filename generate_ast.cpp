@@ -9,8 +9,9 @@ using namespace std;
 
 void defineType(ofstream& ofs, const string& baseName, const string& className, const string& fieldList) {
 	ofs << endl;
-	ofs << "class " + className + " : public Expr, public std::enable_shared_from_this<" + 
-		className + "> {" << endl;
+	ofs << "template<class T>" << endl;
+	ofs << "class " + className + " : public Expr<T>, public std::enable_shared_from_this<" + 
+		className + "<T>> {" << endl;
 	ofs << "public:" << endl;
 
 	vector<string> fields;
@@ -23,6 +24,7 @@ void defineType(ofstream& ofs, const string& baseName, const string& className, 
 		vector<string> res;
 		boost::split(res, field, boost::is_any_of(" "));
 		string& type = res[0];
+		type += type == "Token" || type == "any" ? "" : "<T>";
 		string& name = res[1];
 
 		parameters.emplace_back(type, name);
@@ -45,8 +47,8 @@ void defineType(ofstream& ofs, const string& baseName, const string& className, 
 
 	ofs << "\t}" << endl << endl;
 
-	ofs << "\tany accept() override {" << endl;
-	ofs << "\t\treturn Visitor::visit" + className + baseName + "( shared_from_this() );" << endl;
+	ofs << "\tT accept(std::shared_ptr<Visitor<T>> visitor) override {" << endl;
+	ofs << "\t\treturn visitor->visit" + className + baseName + "( this->shared_from_this() );" << endl;
 	ofs << "\t}" << endl << endl;
 
 	// Fields
@@ -74,14 +76,17 @@ void defineVisitor(ofstream& ofs, const string& baseName, const vector<string>& 
 	// Forward class declarations
 	ofs << endl;
 	for (auto& t : dataTypes) {
-		ofs << "class " + t + ";" << endl;
+		ofs << "template<class T> class " + t + ";" << endl;
 	}
 
-	ofs << endl << "class Visitor {" << endl;
+	ofs << endl << "template<class T>" << endl;
+	ofs << "class Visitor {" << endl;
 	ofs << "public:" << endl;
 
+	ofs << "\tvirtual ~Visitor() = default;" << endl;
+
 	for (auto& t : dataTypes) {
-		ofs << "\tstatic any visit" + t + baseName + "(std::shared_ptr<" + t + "> " + boost::to_lower_copy<string>(baseName) + ");" << endl;
+		ofs << "\tT visit" + t + baseName + "(std::shared_ptr<" + t + "<T>> " + boost::to_lower_copy<string>(baseName) + ");" << endl;
 	}
 
 	ofs << "};" << endl;
@@ -121,10 +126,12 @@ void defineAst(const string& output_dir, const string& baseName, const vector<st
 	defineVisitor(ofs, baseName, types);
 	ofs << endl;
 	// ofs << "class Visitor;" << endl << endl;
+	ofs << "template<class T>" << endl;
 	ofs << "class Expr {" << endl;
 	ofs << "public:" << endl;
 
-	ofs << "\tvirtual any accept() = 0;" << endl;
+	ofs << "\tvirtual ~Expr() = default;" << endl;
+	ofs << "\tvirtual T accept(std::shared_ptr<Visitor<T>> visitor) = 0;" << endl;
 	
 	ofs << "};" << endl;
 
