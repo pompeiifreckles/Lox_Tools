@@ -34,11 +34,17 @@ class AstPrinter : public Visitor<string>, public enable_shared_from_this<AstPri
 	}
 
 	string visitLiteralExpr(shared_ptr<Literal<string>> expr) override {
-		if (expr->value == nullptr) return "nil";
-		if (expr->value->type() == typeid(double)) {
-			return any_cast<string>(expr->value);
+		if (expr->value->type() == typeid(nullptr) || expr->value->type() == typeid(NULL)) return "nil";
+		if (expr->value->type() == typeid(int)) {
+			return to_string(any_cast<int>(*expr->value));
+		} else if (expr->value->type() == typeid(double)) {
+			return to_string(any_cast<double>(*expr->value));
+		} else if (expr->value->type() == typeid(const char *)) {
+			return any_cast<const char *>(*expr->value);
+		} else if (expr->value->type() == typeid(string)) {
+			return any_cast<string>(*expr->value);
 		}
-		return any_cast<string>(expr->value);
+		return expr->value->type().name();
 	}
 
 	string visitUnaryExpr(shared_ptr<Unary<string>> expr) override {
