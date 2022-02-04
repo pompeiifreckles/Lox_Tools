@@ -27,10 +27,10 @@ template<class T>
 class Visitor {
 public:
 	virtual ~Visitor() = default;
-	T visitBinaryExpr(std::shared_ptr<Binary<T>> expr);
-	T visitGroupingExpr(std::shared_ptr<Grouping<T>> expr);
-	T visitLiteralExpr(std::shared_ptr<Literal<T>> expr);
-	T visitUnaryExpr(std::shared_ptr<Unary<T>> expr);
+	virtual T visitBinaryExpr(std::shared_ptr<Binary<T>> expr) = 0;
+	virtual T visitGroupingExpr(std::shared_ptr<Grouping<T>> expr) = 0;
+	virtual T visitLiteralExpr(std::shared_ptr<Literal<T>> expr) = 0;
+	virtual T visitUnaryExpr(std::shared_ptr<Unary<T>> expr) = 0;
 };
 
 template<class T>

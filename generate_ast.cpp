@@ -86,7 +86,7 @@ void defineVisitor(ofstream& ofs, const string& baseName, const vector<string>& 
 	ofs << "\tvirtual ~Visitor() = default;" << endl;
 
 	for (auto& t : dataTypes) {
-		ofs << "\tT visit" + t + baseName + "(std::shared_ptr<" + t + "<T>> " + boost::to_lower_copy<string>(baseName) + ");" << endl;
+		ofs << "\tvirtual T visit" + t + baseName + "(std::shared_ptr<" + t + "<T>> " + boost::to_lower_copy<string>(baseName) + ") = 0;" << endl;
 	}
 
 	ofs << "};" << endl;
